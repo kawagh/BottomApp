@@ -65,8 +65,8 @@ private fun MainContent(showTextField: Boolean) {
         }
         LazyColumn() {
             items(installedApps) {
-                it.name?.let { name ->
-                    Text(name)
+                it.packageName?.let { pkgName ->
+                    Text(pkgName)
                 }
             }
         }
