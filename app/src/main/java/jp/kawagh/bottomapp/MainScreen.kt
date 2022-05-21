@@ -1,7 +1,11 @@
 package jp.kawagh.bottomapp
 
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,7 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.graphics.drawable.toBitmap
 
 
 @Composable
@@ -65,9 +71,19 @@ private fun MainContent(showTextField: Boolean) {
         }
         LazyColumn() {
             items(installedApps) {
-                Text(it.packageName)
+                ApplicationInfoItem(appInfo = it, packageManager = packageManager)
             }
         }
-        Text("list app")
+    }
+}
+
+@Composable
+private fun ApplicationInfoItem(appInfo: ApplicationInfo, packageManager: PackageManager) {
+    Row() {
+        Image(
+            bitmap = appInfo.loadIcon(packageManager).toBitmap(150, 150).asImageBitmap(),
+            contentDescription = null
+        )
+        Text(appInfo.packageName)
     }
 }
