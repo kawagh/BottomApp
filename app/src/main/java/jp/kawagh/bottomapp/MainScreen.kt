@@ -29,17 +29,12 @@ fun MainScreen() {
     }
     Scaffold(
         content = { MainContent(showTextField = showTextField) },
-        isFloatingActionButtonDocked = true,
         floatingActionButtonPosition = FabPosition.Center,
         floatingActionButton = {
             FloatingActionButton(onClick = { showTextField = !showTextField }) {
                 Icon(Icons.Default.Search, "search app")
             }
         },
-        bottomBar = {
-            BottomAppBar() {
-            }
-        }
     )
 }
 
