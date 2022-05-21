@@ -18,6 +18,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.graphics.drawable.toBitmap
 
 
@@ -88,6 +89,7 @@ private fun MainContent(showTextField: Boolean) {
 @Composable
 private fun ApplicationInfoItem(appInfo: ApplicationInfo, packageManager: PackageManager) {
     val context = LocalContext.current
+    val appLabel = packageManager.getApplicationLabel(appInfo).toString()
     Row(
         Modifier
             .fillMaxWidth()
@@ -99,7 +101,7 @@ private fun ApplicationInfoItem(appInfo: ApplicationInfo, packageManager: Packag
                     Toast
                         .makeText(
                             context,
-                            "launch ${appInfo.packageName} failed",
+                            "launch $appLabel failed",
                             Toast.LENGTH_SHORT
                         )
                         .show()
@@ -109,6 +111,9 @@ private fun ApplicationInfoItem(appInfo: ApplicationInfo, packageManager: Packag
             bitmap = appInfo.loadIcon(packageManager).toBitmap(150, 150).asImageBitmap(),
             contentDescription = null
         )
-        Text(appInfo.packageName)
+        Column() {
+            Text(appLabel, fontSize = MaterialTheme.typography.h6.fontSize)
+            Text(appInfo.packageName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
