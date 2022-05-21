@@ -10,14 +10,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.graphics.drawable.toBitmap
 
@@ -27,8 +29,53 @@ fun MainScreen() {
     var showTextField by remember {
         mutableStateOf(false)
     }
+
+    var textInput by remember {
+        mutableStateOf("")
+    }
+
+    val focusRequester = remember {
+        FocusRequester()
+    }
+    var filterOnlySystemApps by remember {
+        mutableStateOf(false)
+    }
+    val context = LocalContext.current
+    val packageManager = context.packageManager
+    val allApps = packageManager.getInstalledApplications(0)
+    val systemApps =
+        packageManager.getInstalledApplications(PackageManager.MATCH_SYSTEM_ONLY)
     Scaffold(
-        content = { MainContent(showTextField = showTextField) },
+        topBar = {
+            TopAppBar(
+                backgroundColor = Color.White,
+                title = {
+                    if (showTextField) {
+                        LaunchedEffect(Unit) {
+                            focusRequester.requestFocus()
+                        }
+                        TextField(
+                            value = textInput, onValueChange = { textInput = it },
+                            modifier = Modifier.focusRequester(focusRequester)
+                        )
+                    } else {
+                        Text(stringResource(id = R.string.app_name))
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { filterOnlySystemApps = !filterOnlySystemApps }) {
+                        Icon(Icons.Default.FilterList, null)
+                    }
+                }
+            )
+        },
+        content = {
+            MainContent(
+                showTextField = showTextField,
+                textInput = textInput,
+                allApps = if (filterOnlySystemApps) systemApps else allApps,
+            )
+        },
         floatingActionButtonPosition = FabPosition.Center,
         floatingActionButton = {
             FloatingActionButton(onClick = { showTextField = !showTextField }) {
@@ -40,34 +87,23 @@ fun MainScreen() {
 
 
 @Composable
-private fun MainContent(showTextField: Boolean) {
-    var textInput by remember {
-        mutableStateOf("")
-    }
-    val focusRequester = remember {
-        FocusRequester()
-    }
-    val context = LocalContext.current
-    val packageManager = context.packageManager
-    val installedAllApps = packageManager.getInstalledApplications(0)
-    val filteredApps = installedAllApps.filter { it.packageName.contains(textInput) }
+private fun MainContent(
+    showTextField: Boolean,
+    textInput: String,
+    allApps: List<ApplicationInfo>
+) {
+
+    val filteredApps = allApps.filter { it.packageName.contains(textInput) }
     Column(
         Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
     ) {
         if (showTextField) {
-            TextField(
-                value = textInput, onValueChange = { textInput = it },
-                modifier = Modifier.focusRequester(focusRequester)
-            )
-            LaunchedEffect(Unit) {
-                focusRequester.requestFocus()
-            }
             val appsCount =
                 if (textInput.isNotEmpty()) {
-                    "${filteredApps.size}/${installedAllApps.size} apps"
-                } else "${installedAllApps.size} apps"
+                    "${filteredApps.size}/${allApps.size} apps"
+                } else "${allApps.size} apps"
             Text(
                 appsCount, fontSize = MaterialTheme.typography.h5.fontSize,
                 modifier = Modifier.align(Alignment.End)
@@ -75,7 +111,10 @@ private fun MainContent(showTextField: Boolean) {
         }
         LazyColumn(horizontalAlignment = Alignment.Start) {
             items(filteredApps) {
-                ApplicationInfoItem(appInfo = it, packageManager = packageManager)
+                ApplicationInfoItem(
+                    appInfo = it,
+                    packageManager = LocalContext.current.packageManager
+                )
             }
         }
     }
