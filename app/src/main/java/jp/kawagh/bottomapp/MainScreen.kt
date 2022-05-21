@@ -2,11 +2,10 @@ package jp.kawagh.bottomapp
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
@@ -88,7 +87,24 @@ private fun MainContent(showTextField: Boolean) {
 
 @Composable
 private fun ApplicationInfoItem(appInfo: ApplicationInfo, packageManager: PackageManager) {
-    Row() {
+    val context = LocalContext.current
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable {
+                val intent = packageManager.getLaunchIntentForPackage(appInfo.packageName)
+                intent?.also {
+                    context.startActivity(intent)
+                } ?: run {
+                    Toast
+                        .makeText(
+                            context,
+                            "launch ${appInfo.packageName} failed",
+                            Toast.LENGTH_SHORT
+                        )
+                        .show()
+                }
+            }) {
         Image(
             bitmap = appInfo.loadIcon(packageManager).toBitmap(150, 150).asImageBitmap(),
             contentDescription = null
