@@ -54,7 +54,8 @@ private fun MainContent(showTextField: Boolean) {
     }
     val context = LocalContext.current
     val packageManager = context.packageManager
-    val installedApps = packageManager.getInstalledApplications(0)
+    val installedAllApps = packageManager.getInstalledApplications(0)
+    val filteredApps = installedAllApps.filter { it.packageName.contains(textInput) }
     Column(
         Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -68,9 +69,17 @@ private fun MainContent(showTextField: Boolean) {
             LaunchedEffect(Unit) {
                 focusRequester.requestFocus()
             }
+            val appsCount =
+                if (textInput.isNotEmpty()) {
+                    "${filteredApps.size}/${installedAllApps.size} apps"
+                } else "${installedAllApps.size} apps"
+            Text(
+                appsCount, fontSize = MaterialTheme.typography.h5.fontSize,
+                modifier = Modifier.align(Alignment.End)
+            )
         }
-        LazyColumn() {
-            items(installedApps) {
+        LazyColumn(horizontalAlignment = Alignment.Start) {
+            items(filteredApps) {
                 ApplicationInfoItem(appInfo = it, packageManager = packageManager)
             }
         }
