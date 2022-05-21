@@ -3,6 +3,8 @@ package jp.kawagh.bottomapp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -11,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 
 
 @Composable
@@ -43,6 +46,9 @@ private fun MainContent(showTextField: Boolean) {
     val focusRequester = remember {
         FocusRequester()
     }
+    val context = LocalContext.current
+    val packageManager = context.packageManager
+    val installedApps = packageManager.getInstalledApplications(0)
     Column(
         Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -55,6 +61,13 @@ private fun MainContent(showTextField: Boolean) {
             )
             LaunchedEffect(Unit) {
                 focusRequester.requestFocus()
+            }
+        }
+        LazyColumn() {
+            items(installedApps) {
+                it.name?.let { name ->
+                    Text(name)
+                }
             }
         }
         Text("list app")
