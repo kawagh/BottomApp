@@ -23,7 +23,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.core.graphics.drawable.toBitmap
 
 
@@ -124,6 +127,7 @@ private fun MainContent(
             items(filteredApps) {
                 ApplicationInfoItem(
                     appInfo = it,
+                    textInput
                 )
             }
         }
@@ -131,10 +135,22 @@ private fun MainContent(
 }
 
 @Composable
-private fun ApplicationInfoItem(appInfo: ApplicationInfo) {
+private fun ApplicationInfoItem(appInfo: ApplicationInfo, textInput: String) {
     val context = LocalContext.current
     val packageManager = context.packageManager
     val appLabel = packageManager.getApplicationLabel(appInfo).toString()
+    val index = appInfo.packageName.indexOf(textInput)
+    val annotatedText = buildAnnotatedString {
+        if (index == -1) {
+            append(appInfo.packageName)
+        } else {
+            append(appInfo.packageName.substring(0, index))
+            withStyle(style = SpanStyle(background = Color.Yellow)) {
+                append(appInfo.packageName.substring(index, index + textInput.length))
+            }
+            append(appInfo.packageName.substring(index + textInput.length))
+        }
+    }
     Row(
         Modifier
             .fillMaxWidth()
@@ -158,7 +174,7 @@ private fun ApplicationInfoItem(appInfo: ApplicationInfo) {
         )
         Column() {
             Text(appLabel, fontSize = MaterialTheme.typography.h6.fontSize)
-            Text(appInfo.packageName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(annotatedText, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
