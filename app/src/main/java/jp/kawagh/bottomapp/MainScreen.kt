@@ -10,7 +10,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,7 +38,7 @@ fun MainScreen() {
     val focusRequester = remember {
         FocusRequester()
     }
-    var filterOnlySystemApps by remember {
+    var filterOnlyNonSystemApps by remember {
         mutableStateOf(false)
     }
     val context = LocalContext.current
@@ -45,6 +46,8 @@ fun MainScreen() {
     val allApps = packageManager.getInstalledApplications(0)
     val systemApps =
         packageManager.getInstalledApplications(PackageManager.MATCH_SYSTEM_ONLY)
+    val nonSystemApps =
+        allApps.filterNot { it.flags.and(ApplicationInfo.FLAG_SYSTEM).compareTo(0) == 1 }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -63,7 +66,7 @@ fun MainScreen() {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { filterOnlySystemApps = !filterOnlySystemApps }) {
+                    IconButton(onClick = { filterOnlyNonSystemApps = !filterOnlyNonSystemApps }) {
                         Icon(Icons.Default.FilterList, null)
                     }
                 }
@@ -73,7 +76,7 @@ fun MainScreen() {
             MainContent(
                 showTextField = showTextField,
                 textInput = textInput,
-                allApps = if (filterOnlySystemApps) systemApps else allApps,
+                allApps = if (filterOnlyNonSystemApps) nonSystemApps else allApps
             )
         },
         floatingActionButtonPosition = FabPosition.Center,
