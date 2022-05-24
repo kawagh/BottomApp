@@ -124,7 +124,6 @@ private fun MainContent(
             items(filteredApps) {
                 ApplicationInfoItem(
                     appInfo = it,
-                    packageManager = LocalContext.current.packageManager
                 )
             }
         }
@@ -132,8 +131,9 @@ private fun MainContent(
 }
 
 @Composable
-private fun ApplicationInfoItem(appInfo: ApplicationInfo, packageManager: PackageManager) {
+private fun ApplicationInfoItem(appInfo: ApplicationInfo) {
     val context = LocalContext.current
+    val packageManager = context.packageManager
     val appLabel = packageManager.getApplicationLabel(appInfo).toString()
     Row(
         Modifier
