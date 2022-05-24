@@ -113,16 +113,13 @@ private fun MainContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
     ) {
-        if (showTextField) {
-            val appsCount =
-                if (textInput.isNotEmpty()) {
-                    "${filteredApps.size}/${allApps.size} apps"
-                } else "${allApps.size} apps"
-            Text(
-                appsCount, fontSize = MaterialTheme.typography.h5.fontSize,
-                modifier = Modifier.align(Alignment.End)
-            )
-        }
+        val headerText = if (showTextField || textInput.isNotEmpty()) {
+            "${filteredApps.size}/${allApps.size} apps"
+        } else "${allApps.size} apps"
+        Text(
+            headerText, fontSize = MaterialTheme.typography.h5.fontSize,
+            modifier = Modifier.align(Alignment.End)
+        )
         LazyColumn(horizontalAlignment = Alignment.Start) {
             items(filteredApps) {
                 ApplicationInfoItem(
