@@ -3,6 +3,8 @@ package jp.kawagh.bottomapp
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.widget.Toast
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -67,7 +69,16 @@ fun MainScreen() {
                 },
                 actions = {
                     IconButton(onClick = { filterOnlyNonSystemApps = !filterOnlyNonSystemApps }) {
-                        Icon(Icons.Default.FilterList, null)
+                        val tint =
+                            animateColorAsState(
+                                targetValue = if (filterOnlyNonSystemApps) Color.Blue else Color.LightGray,
+                                animationSpec = tween(durationMillis = 500)
+                            )
+                        Icon(
+                            Icons.Default.FilterList,
+                            null,
+                            tint = tint.value
+                        )
                     }
                 }
             )
