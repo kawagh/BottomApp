@@ -6,14 +6,14 @@ import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,12 +21,14 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 
 
@@ -99,9 +101,31 @@ fun MainScreen() {
                 Icon(Icons.Default.Search, "search app")
             }
         },
+        bottomBar = {
+            var selectedItemIndex by remember {
+                mutableStateOf(0)
+            }
+            val items = listOf(BottomItem.Home, BottomItem.Recent)
+            BottomNavigation(
+                backgroundColor = Color.White,
+            ) {
+                items.forEachIndexed { index, item ->
+                    BottomNavigationItem(
+                        selected = index == selectedItemIndex,
+                        onClick = { selectedItemIndex = index },
+                        icon = { Icon(item.icon, null) },
+                        label = { Text(item.name) },
+                    )
+                }
+            }
+        }
     )
 }
 
+sealed class BottomItem(val name: String, val icon: ImageVector) {
+    object Home : BottomItem("Home", Icons.Default.Home)
+    object Recent : BottomItem("Recent", Icons.Default.History)
+}
 
 @Composable
 private fun MainContent(
