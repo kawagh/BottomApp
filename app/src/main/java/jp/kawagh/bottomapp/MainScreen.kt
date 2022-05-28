@@ -1,19 +1,24 @@
 package jp.kawagh.bottomapp
 
+import android.app.usage.UsageStatsManager
+import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.icu.util.Calendar
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,8 +35,25 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import java.util.*
 
+typealias MilliSeconds = Long
 
+@Composable
+fun Stats(usageStatsMap: SortedMap<String, MilliSeconds>) {
+    LazyColumn(Modifier.size(300.dp)) {
+        usageStatsMap.forEach {
+            item {
+                Text(text = it.key)
+                val hour = it.value / 1000 / 3600
+                Text(text = "${hour}h")
+            }
+        }
+    }
+}
+
+@ExperimentalPermissionsApi
 @Composable
 fun MainScreen() {
     var showTextField by remember {
@@ -42,12 +64,15 @@ fun MainScreen() {
         mutableStateOf("")
     }
 
-    val focusRequester = remember {
-        FocusRequester()
-    }
     var filterOnlyNonSystemApps by remember {
         mutableStateOf(false)
     }
+
+    var selectedItemIndex by remember {
+        mutableStateOf(0)
+    }
+    val items = listOf(BottomItem.Home, BottomItem.Recent)
+
     val context = LocalContext.current
     val packageManager = context.packageManager
     val allApps = packageManager.getInstalledApplications(0)
@@ -55,6 +80,24 @@ fun MainScreen() {
         packageManager.getInstalledApplications(PackageManager.MATCH_SYSTEM_ONLY)
     val nonSystemApps =
         allApps.filterNot { it.flags.and(ApplicationInfo.FLAG_SYSTEM).compareTo(0) == 1 }
+    val focusRequester = remember {
+        FocusRequester()
+    }
+
+    // for calculate Stats
+    val usageStatManager =
+        context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+    val oneMonthAgo = Calendar.getInstance().apply {
+        add(Calendar.MONTH, -1)
+    }
+    val usageStatsMap = usageStatManager.queryUsageStats(
+        UsageStatsManager.INTERVAL_MONTHLY,
+        oneMonthAgo.timeInMillis,
+        System.currentTimeMillis()
+    ).associate { it.packageName to it.totalTimeInForeground }
+    val sortedUsageStatsMap =
+        usageStatsMap.toSortedMap { k1, k2 -> (usageStatsMap[k2]!! - usageStatsMap[k1]!!).toInt() }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -89,11 +132,16 @@ fun MainScreen() {
             )
         },
         content = {
-            MainContent(
-                showTextField = showTextField,
-                textInput = textInput,
-                allApps = if (filterOnlyNonSystemApps) nonSystemApps else allApps
-            )
+            Column {
+                if (items[selectedItemIndex] == BottomItem.Recent) {
+                    Stats(sortedUsageStatsMap)
+                }
+                MainContent(
+                    showTextField = showTextField,
+                    textInput = textInput,
+                    allApps = if (filterOnlyNonSystemApps) nonSystemApps else allApps
+                )
+            }
         },
         floatingActionButtonPosition = FabPosition.Center,
         floatingActionButton = {
@@ -102,10 +150,6 @@ fun MainScreen() {
             }
         },
         bottomBar = {
-            var selectedItemIndex by remember {
-                mutableStateOf(0)
-            }
-            val items = listOf(BottomItem.Home, BottomItem.Recent)
             BottomNavigation(
                 backgroundColor = Color.White,
             ) {
