@@ -276,7 +276,12 @@ private fun ApplicationInfoItem(
                 .weight(4f)
                 .wrapContentWidth(Alignment.Start)
         ) {
-            Text(appLabel, fontSize = MaterialTheme.typography.h6.fontSize)
+            Text(
+                appLabel,
+                fontSize = MaterialTheme.typography.h6.fontSize,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             Text(annotatedText, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         IconButton(
