@@ -13,11 +13,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -25,15 +28,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.core.graphics.drawable.toBitmap
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalComposeUiApi::class)
 @ExperimentalPermissionsApi
 @Composable
 fun MainScreen() {
@@ -120,6 +126,12 @@ fun MainScreen() {
         else -> Icons.Default.Archive
     }
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+    // TODO launch app on 1 match
+    val onDoneClick: () -> Unit = {
+        keyboardController?.hide()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -130,8 +142,14 @@ fun MainScreen() {
                             focusRequester.requestFocus()
                         }
                         TextField(
-                            value = textInput, onValueChange = { textInput = it },
-                            modifier = Modifier.focusRequester(focusRequester)
+                            value = textInput,
+                            onValueChange = { textInput = it },
+                            keyboardActions = KeyboardActions(onDone = { onDoneClick.invoke() }),
+                            // when keyboardType is KeyboardType.Ascii ja keyboard appear
+                            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email),
+                            singleLine = true,
+                            modifier = Modifier
+                                .focusRequester(focusRequester)
                         )
                     } else {
                         Text(stringResource(id = R.string.app_name))
