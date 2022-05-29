@@ -96,7 +96,21 @@ fun MainScreen() {
     ).associate { it.packageName to it.lastTimeUsed }
     val sortedUsageStatsMap =
         usageStatsMap.toSortedMap { k1, k2 -> (usageStatsMap[k2]!!.compareTo(usageStatsMap[k1]!!)) }
-
+    val sourceApps =
+        if (filterOnlyNonSystemApps) nonSystemApps else allApps
+    val appsToDisplay = when (items[selectedItemIndex]) {
+        BottomItem.Home -> {
+            sourceApps
+        }
+        BottomItem.Recent -> {
+            sourceApps.sortedBy {
+                -usageStatsMap.getOrDefault(
+                    it.packageName,
+                    0
+                )
+            }
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -138,7 +152,8 @@ fun MainScreen() {
                 MainContent(
                     showTextField = showTextField,
                     textInput = textInput,
-                    allApps = if (filterOnlyNonSystemApps) nonSystemApps else allApps
+                    appsToDisplay = appsToDisplay
+
                 )
             }
         },
@@ -149,9 +164,7 @@ fun MainScreen() {
             }
         },
         bottomBar = {
-            BottomNavigation(
-                backgroundColor = Color.White,
-            ) {
+            BottomNavigation(backgroundColor = Color.White) {
                 items.forEachIndexed { index, item ->
                     BottomNavigationItem(
                         selected = index == selectedItemIndex,
@@ -174,18 +187,18 @@ sealed class BottomItem(val name: String, val icon: ImageVector) {
 private fun MainContent(
     showTextField: Boolean,
     textInput: String,
-    allApps: List<ApplicationInfo>
+    appsToDisplay: List<ApplicationInfo>
 ) {
 
-    val filteredApps = allApps.filter { it.packageName.contains(textInput) }
+    val filteredApps = appsToDisplay.filter { it.packageName.contains(textInput) }
     Column(
         Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
     ) {
         val headerText = if (showTextField || textInput.isNotEmpty()) {
-            "${filteredApps.size}/${allApps.size} apps"
-        } else "${allApps.size} apps"
+            "${filteredApps.size}/${appsToDisplay.size} apps"
+        } else "${appsToDisplay.size} apps"
         Text(
             headerText, fontSize = MaterialTheme.typography.h5.fontSize,
             modifier = Modifier.align(Alignment.End)
