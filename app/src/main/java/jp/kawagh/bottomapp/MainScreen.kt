@@ -15,10 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.core.graphics.drawable.toBitmap
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import kotlinx.coroutines.launch
 
 
 @ExperimentalPermissionsApi
@@ -55,9 +53,17 @@ fun MainScreen() {
     var selectedItemIndex by remember {
         mutableStateOf(0)
     }
-    val items = listOf(BottomItem.Home, BottomItem.Recent)
+    val items = listOf(BottomItem.Home, BottomItem.Recent, BottomItem.Archive)
 
     val context = LocalContext.current
+    val dataStore = ArchiveDataStore(context)
+    val archivedPackageNames = dataStore.getValue.collectAsState(initial = emptySet()).value
+
+    LaunchedEffect(Unit) {
+        dataStore.saveValue(
+            context.packageName
+        )
+    }
     val packageManager = context.packageManager
     val allApps = packageManager.getInstalledApplications(0)
     val systemApps =
@@ -81,18 +87,40 @@ fun MainScreen() {
     ).associate { it.packageName to it.lastTimeUsed }
     val sourceApps =
         if (filterOnlyNonSystemApps) nonSystemApps else allApps
+
+
     val appsToDisplay = when (items[selectedItemIndex]) {
         BottomItem.Home -> {
-            sourceApps
+            sourceApps.filterNot { archivedPackageNames.contains(it.packageName) }
         }
         BottomItem.Recent -> {
             sourceApps
                 .filter { usageStatsMap.contains(it.packageName) }
+                .filterNot { archivedPackageNames.contains(it.packageName) }
                 .sortedBy {
                     -usageStatsMap.getValue(it.packageName)
                 }
         }
+        BottomItem.Archive -> sourceApps.filter { archivedPackageNames.contains(it.packageName) }
     }
+    val scope = rememberCoroutineScope()
+    val onTrailIconClicks: (appInfo: ApplicationInfo) -> Unit = {
+        scope.launch {
+            when (items[selectedItemIndex]) {
+                is BottomItem.Archive -> {
+                    dataStore.removeValue(it.packageName)
+                }
+                else -> {
+                    dataStore.saveValue(it.packageName)
+                }
+            }
+        }
+    }
+    val actionIcon = when (items[selectedItemIndex]) {
+        is BottomItem.Archive -> Icons.Default.Remove
+        else -> Icons.Default.Archive
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -131,8 +159,9 @@ fun MainScreen() {
                 MainContent(
                     showTextField = showTextField,
                     textInput = textInput,
-                    appsToDisplay = appsToDisplay
-
+                    appsToDisplay = appsToDisplay,
+                    onTrailIconClick = onTrailIconClicks,
+                    trailIcon = actionIcon,
                 )
             }
         },
@@ -160,13 +189,16 @@ fun MainScreen() {
 sealed class BottomItem(val name: String, val icon: ImageVector) {
     object Home : BottomItem("Home", Icons.Default.Home)
     object Recent : BottomItem("Recent", Icons.Default.History)
+    object Archive : BottomItem("Archive", Icons.Default.Archive)
 }
 
 @Composable
 private fun MainContent(
     showTextField: Boolean,
     textInput: String,
-    appsToDisplay: List<ApplicationInfo>
+    appsToDisplay: List<ApplicationInfo>,
+    onTrailIconClick: (ApplicationInfo) -> Unit,
+    trailIcon: ImageVector,
 ) {
 
     val filteredApps = appsToDisplay.filter { it.packageName.contains(textInput) }
@@ -186,7 +218,9 @@ private fun MainContent(
             items(filteredApps) {
                 ApplicationInfoItem(
                     appInfo = it,
-                    textInput
+                    textInput = textInput,
+                    onItemClick = { onTrailIconClick(it) },
+                    icon = trailIcon,
                 )
             }
         }
@@ -194,7 +228,12 @@ private fun MainContent(
 }
 
 @Composable
-private fun ApplicationInfoItem(appInfo: ApplicationInfo, textInput: String) {
+private fun ApplicationInfoItem(
+    appInfo: ApplicationInfo,
+    textInput: String,
+    onItemClick: () -> Unit,
+    icon: ImageVector,
+) {
     val context = LocalContext.current
     val packageManager = context.packageManager
     val appLabel = packageManager.getApplicationLabel(appInfo).toString()
@@ -231,9 +270,27 @@ private fun ApplicationInfoItem(appInfo: ApplicationInfo, textInput: String) {
             bitmap = appInfo.loadIcon(packageManager).toBitmap(150, 150).asImageBitmap(),
             contentDescription = null
         )
-        Column() {
-            Text(appLabel, fontSize = MaterialTheme.typography.h6.fontSize)
+        Column(
+
+            modifier = Modifier
+                .weight(4f)
+                .wrapContentWidth(Alignment.Start)
+        ) {
+            Text(
+                appLabel,
+                fontSize = MaterialTheme.typography.h6.fontSize,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             Text(annotatedText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        IconButton(
+            onClick = onItemClick,
+            modifier = Modifier
+                .weight(1f)
+                .wrapContentWidth(Alignment.End)
+        ) {
+            Icon(icon, null)
         }
     }
 }
