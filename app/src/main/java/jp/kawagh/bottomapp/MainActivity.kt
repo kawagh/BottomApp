@@ -47,12 +47,12 @@ class MainActivity : ComponentActivity() {
         // `AppOpsManager.checkOpNoThrow` is renamed from Android Q
         val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             appOpsManager.unsafeCheckOpNoThrow(
-                "android:get_usage_stats",
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
                 applicationInfo.uid, applicationInfo.packageName
             )
         } else {
             appOpsManager.checkOpNoThrow(
-                "android:get_usage_stats",
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
                 applicationInfo.uid, applicationInfo.packageName
             )
         }
