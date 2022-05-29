@@ -1,7 +1,10 @@
 package jp.kawagh.bottomapp
 
+import android.app.usage.UsageStatsManager
+import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.icu.util.Calendar
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -13,6 +16,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +26,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -28,8 +34,10 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.core.graphics.drawable.toBitmap
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
 
 
+@ExperimentalPermissionsApi
 @Composable
 fun MainScreen() {
     var showTextField by remember {
@@ -40,12 +48,15 @@ fun MainScreen() {
         mutableStateOf("")
     }
 
-    val focusRequester = remember {
-        FocusRequester()
-    }
     var filterOnlyNonSystemApps by remember {
         mutableStateOf(false)
     }
+
+    var selectedItemIndex by remember {
+        mutableStateOf(0)
+    }
+    val items = listOf(BottomItem.Home, BottomItem.Recent)
+
     val context = LocalContext.current
     val packageManager = context.packageManager
     val allApps = packageManager.getInstalledApplications(0)
@@ -53,6 +64,35 @@ fun MainScreen() {
         packageManager.getInstalledApplications(PackageManager.MATCH_SYSTEM_ONLY)
     val nonSystemApps =
         allApps.filterNot { it.flags.and(ApplicationInfo.FLAG_SYSTEM).compareTo(0) == 1 }
+    val focusRequester = remember {
+        FocusRequester()
+    }
+
+    // for calculate Stats
+    val usageStatManager =
+        context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+    val oneMonthAgo = Calendar.getInstance().apply {
+        add(Calendar.MONTH, -1)
+    }
+    val usageStatsMap = usageStatManager.queryUsageStats(
+        UsageStatsManager.INTERVAL_MONTHLY,
+        oneMonthAgo.timeInMillis,
+        System.currentTimeMillis()
+    ).associate { it.packageName to it.lastTimeUsed }
+    val sourceApps =
+        if (filterOnlyNonSystemApps) nonSystemApps else allApps
+    val appsToDisplay = when (items[selectedItemIndex]) {
+        BottomItem.Home -> {
+            sourceApps
+        }
+        BottomItem.Recent -> {
+            sourceApps
+                .filter { usageStatsMap.contains(it.packageName) }
+                .sortedBy {
+                    -usageStatsMap.getValue(it.packageName)
+                }
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -87,11 +127,14 @@ fun MainScreen() {
             )
         },
         content = {
-            MainContent(
-                showTextField = showTextField,
-                textInput = textInput,
-                allApps = if (filterOnlyNonSystemApps) nonSystemApps else allApps
-            )
+            Column {
+                MainContent(
+                    showTextField = showTextField,
+                    textInput = textInput,
+                    appsToDisplay = appsToDisplay
+
+                )
+            }
         },
         floatingActionButtonPosition = FabPosition.Center,
         floatingActionButton = {
@@ -99,26 +142,42 @@ fun MainScreen() {
                 Icon(Icons.Default.Search, "search app")
             }
         },
+        bottomBar = {
+            BottomNavigation(backgroundColor = Color.White) {
+                items.forEachIndexed { index, item ->
+                    BottomNavigationItem(
+                        selected = index == selectedItemIndex,
+                        onClick = { selectedItemIndex = index },
+                        icon = { Icon(item.icon, null) },
+                        label = { Text(item.name) },
+                    )
+                }
+            }
+        }
     )
 }
 
+sealed class BottomItem(val name: String, val icon: ImageVector) {
+    object Home : BottomItem("Home", Icons.Default.Home)
+    object Recent : BottomItem("Recent", Icons.Default.History)
+}
 
 @Composable
 private fun MainContent(
     showTextField: Boolean,
     textInput: String,
-    allApps: List<ApplicationInfo>
+    appsToDisplay: List<ApplicationInfo>
 ) {
 
-    val filteredApps = allApps.filter { it.packageName.contains(textInput) }
+    val filteredApps = appsToDisplay.filter { it.packageName.contains(textInput) }
     Column(
         Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
     ) {
         val headerText = if (showTextField || textInput.isNotEmpty()) {
-            "${filteredApps.size}/${allApps.size} apps"
-        } else "${allApps.size} apps"
+            "${filteredApps.size}/${appsToDisplay.size} apps"
+        } else "${appsToDisplay.size} apps"
         Text(
             headerText, fontSize = MaterialTheme.typography.h5.fontSize,
             modifier = Modifier.align(Alignment.End)
