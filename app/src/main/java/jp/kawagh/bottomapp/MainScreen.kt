@@ -257,13 +257,20 @@ private fun ApplicationInfoItem(
             bitmap = appInfo.loadIcon(packageManager).toBitmap(150, 150).asImageBitmap(),
             contentDescription = null
         )
-        Column() {
+        Column(
+
+            modifier = Modifier
+                .weight(4f)
+                .wrapContentWidth(Alignment.Start)
+        ) {
             Text(appLabel, fontSize = MaterialTheme.typography.h6.fontSize)
             Text(annotatedText, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        // TODO fix alignment
         IconButton(
             onClick = onArchiveClick,
+            modifier = Modifier
+                .weight(1f)
+                .wrapContentWidth(Alignment.End)
         ) {
             Icon(Icons.Default.Archive, null)
         }
