@@ -46,8 +46,7 @@ fun Stats(usageStatsMap: SortedMap<String, MilliSeconds>) {
         usageStatsMap.forEach {
             item {
                 Text(text = it.key)
-                val hour = it.value / 1000 / 3600
-                Text(text = "${hour}h")
+                Text(text = Date(it.value).toString())
             }
         }
     }
@@ -94,9 +93,9 @@ fun MainScreen() {
         UsageStatsManager.INTERVAL_MONTHLY,
         oneMonthAgo.timeInMillis,
         System.currentTimeMillis()
-    ).associate { it.packageName to it.totalTimeInForeground }
+    ).associate { it.packageName to it.lastTimeUsed }
     val sortedUsageStatsMap =
-        usageStatsMap.toSortedMap { k1, k2 -> (usageStatsMap[k2]!! - usageStatsMap[k1]!!).toInt() }
+        usageStatsMap.toSortedMap { k1, k2 -> (usageStatsMap[k2]!!.compareTo(usageStatsMap[k1]!!)) }
 
     Scaffold(
         topBar = {
