@@ -91,19 +91,17 @@ fun MainScreen() {
 
     val appsToDisplay = when (items[selectedItemIndex]) {
         BottomItem.Home -> {
-            sourceApps
+            sourceApps.filterNot { archivedPackageNames.contains(it.packageName) }
         }
         BottomItem.Recent -> {
             sourceApps
                 .filter { usageStatsMap.contains(it.packageName) }
+                .filterNot { archivedPackageNames.contains(it.packageName) }
                 .sortedBy {
                     -usageStatsMap.getValue(it.packageName)
                 }
         }
-        BottomItem.Archive -> {
-            val archiveApps = sourceApps.filter { archivedPackageNames.contains(it.packageName) }
-            archiveApps
-        }
+        BottomItem.Archive -> sourceApps.filter { archivedPackageNames.contains(it.packageName) }
     }
     val scope = rememberCoroutineScope()
     val onItemClick: (appInfo: ApplicationInfo) -> Unit = {
