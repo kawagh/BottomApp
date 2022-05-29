@@ -33,24 +33,9 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import java.util.*
 
-typealias MilliSeconds = Long
-
-@Composable
-fun Stats(usageStatsMap: SortedMap<String, MilliSeconds>) {
-    LazyColumn(Modifier.size(300.dp)) {
-        usageStatsMap.forEach {
-            item {
-                Text(text = it.key)
-                Text(text = Date(it.value).toString())
-            }
-        }
-    }
-}
 
 @ExperimentalPermissionsApi
 @Composable
@@ -94,8 +79,6 @@ fun MainScreen() {
         oneMonthAgo.timeInMillis,
         System.currentTimeMillis()
     ).associate { it.packageName to it.lastTimeUsed }
-    val sortedUsageStatsMap =
-        usageStatsMap.toSortedMap { k1, k2 -> (usageStatsMap[k2]!!.compareTo(usageStatsMap[k1]!!)) }
     val sourceApps =
         if (filterOnlyNonSystemApps) nonSystemApps else allApps
     val appsToDisplay = when (items[selectedItemIndex]) {
@@ -103,12 +86,11 @@ fun MainScreen() {
             sourceApps
         }
         BottomItem.Recent -> {
-            sourceApps.sortedBy {
-                -usageStatsMap.getOrDefault(
-                    it.packageName,
-                    0
-                )
-            }
+            sourceApps
+                .filter { usageStatsMap.contains(it.packageName) }
+                .sortedBy {
+                    -usageStatsMap.getValue(it.packageName)
+                }
         }
     }
     Scaffold(
@@ -146,9 +128,6 @@ fun MainScreen() {
         },
         content = {
             Column {
-                if (items[selectedItemIndex] == BottomItem.Recent) {
-                    Stats(sortedUsageStatsMap)
-                }
                 MainContent(
                     showTextField = showTextField,
                     textInput = textInput,
