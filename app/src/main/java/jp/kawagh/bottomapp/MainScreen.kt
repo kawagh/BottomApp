@@ -15,10 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,9 +52,17 @@ fun MainScreen() {
     var selectedItemIndex by remember {
         mutableStateOf(0)
     }
-    val items = listOf(BottomItem.Home, BottomItem.Recent)
+    val items = listOf(BottomItem.Home, BottomItem.Recent, BottomItem.Archive)
 
     val context = LocalContext.current
+    val dataStore = ArchiveDataStore(context)
+    val archivedPackageNames = dataStore.getValue.collectAsState(initial = emptySet()).value
+
+    LaunchedEffect(Unit) {
+        dataStore.saveValue(
+            context.packageName
+        )
+    }
     val packageManager = context.packageManager
     val allApps = packageManager.getInstalledApplications(0)
     val systemApps =
@@ -81,6 +86,8 @@ fun MainScreen() {
     ).associate { it.packageName to it.lastTimeUsed }
     val sourceApps =
         if (filterOnlyNonSystemApps) nonSystemApps else allApps
+
+
     val appsToDisplay = when (items[selectedItemIndex]) {
         BottomItem.Home -> {
             sourceApps
@@ -91,6 +98,10 @@ fun MainScreen() {
                 .sortedBy {
                     -usageStatsMap.getValue(it.packageName)
                 }
+        }
+        BottomItem.Archive -> {
+            val archiveApps = sourceApps.filter { archivedPackageNames.contains(it.packageName) }
+            archiveApps
         }
     }
     Scaffold(
@@ -160,6 +171,7 @@ fun MainScreen() {
 sealed class BottomItem(val name: String, val icon: ImageVector) {
     object Home : BottomItem("Home", Icons.Default.Home)
     object Recent : BottomItem("Recent", Icons.Default.History)
+    object Archive : BottomItem("Archive", Icons.Default.Archive)
 }
 
 @Composable
