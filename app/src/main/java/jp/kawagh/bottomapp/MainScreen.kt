@@ -34,7 +34,6 @@ import androidx.core.graphics.drawable.toBitmap
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.launch
 
-
 @ExperimentalPermissionsApi
 @Composable
 fun MainScreen() {
