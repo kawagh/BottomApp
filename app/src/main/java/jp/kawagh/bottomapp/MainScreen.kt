@@ -104,10 +104,21 @@ fun MainScreen() {
         BottomItem.Archive -> sourceApps.filter { archivedPackageNames.contains(it.packageName) }
     }
     val scope = rememberCoroutineScope()
-    val onItemClick: (appInfo: ApplicationInfo) -> Unit = {
+    val onTrailIconClicks: (appInfo: ApplicationInfo) -> Unit = {
         scope.launch {
-            dataStore.saveValue(it.packageName)
+            when (items[selectedItemIndex]) {
+                is BottomItem.Archive -> {
+                    dataStore.removeValue(it.packageName)
+                }
+                else -> {
+                    dataStore.saveValue(it.packageName)
+                }
+            }
         }
+    }
+    val actionIcon = when (items[selectedItemIndex]) {
+        is BottomItem.Archive -> Icons.Default.Remove
+        else -> Icons.Default.Archive
     }
 
     Scaffold(
@@ -149,7 +160,8 @@ fun MainScreen() {
                     showTextField = showTextField,
                     textInput = textInput,
                     appsToDisplay = appsToDisplay,
-                    onItemClick = onItemClick
+                    onTrailIconClick = onTrailIconClicks,
+                    trailIcon = actionIcon,
                 )
             }
         },
@@ -185,7 +197,8 @@ private fun MainContent(
     showTextField: Boolean,
     textInput: String,
     appsToDisplay: List<ApplicationInfo>,
-    onItemClick: (ApplicationInfo) -> Unit
+    onTrailIconClick: (ApplicationInfo) -> Unit,
+    trailIcon: ImageVector,
 ) {
 
     val filteredApps = appsToDisplay.filter { it.packageName.contains(textInput) }
@@ -206,7 +219,8 @@ private fun MainContent(
                 ApplicationInfoItem(
                     appInfo = it,
                     textInput = textInput,
-                    onArchiveClick = { onItemClick(it) }
+                    onItemClick = { onTrailIconClick(it) },
+                    icon = trailIcon,
                 )
             }
         }
@@ -217,7 +231,8 @@ private fun MainContent(
 private fun ApplicationInfoItem(
     appInfo: ApplicationInfo,
     textInput: String,
-    onArchiveClick: () -> Unit
+    onItemClick: () -> Unit,
+    icon: ImageVector,
 ) {
     val context = LocalContext.current
     val packageManager = context.packageManager
@@ -265,12 +280,12 @@ private fun ApplicationInfoItem(
             Text(annotatedText, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         IconButton(
-            onClick = onArchiveClick,
+            onClick = onItemClick,
             modifier = Modifier
                 .weight(1f)
                 .wrapContentWidth(Alignment.End)
         ) {
-            Icon(Icons.Default.Archive, null)
+            Icon(icon, null)
         }
     }
 }
