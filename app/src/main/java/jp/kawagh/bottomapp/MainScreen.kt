@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.core.graphics.drawable.toBitmap
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import kotlinx.coroutines.launch
 
 
 @ExperimentalPermissionsApi
@@ -104,6 +105,13 @@ fun MainScreen() {
             archiveApps
         }
     }
+    val scope = rememberCoroutineScope()
+    val onItemClick: (appInfo: ApplicationInfo) -> Unit = {
+        scope.launch {
+            dataStore.saveValue(it.packageName)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -142,8 +150,8 @@ fun MainScreen() {
                 MainContent(
                     showTextField = showTextField,
                     textInput = textInput,
-                    appsToDisplay = appsToDisplay
-
+                    appsToDisplay = appsToDisplay,
+                    onItemClick = onItemClick
                 )
             }
         },
@@ -178,7 +186,8 @@ sealed class BottomItem(val name: String, val icon: ImageVector) {
 private fun MainContent(
     showTextField: Boolean,
     textInput: String,
-    appsToDisplay: List<ApplicationInfo>
+    appsToDisplay: List<ApplicationInfo>,
+    onItemClick: (ApplicationInfo) -> Unit
 ) {
 
     val filteredApps = appsToDisplay.filter { it.packageName.contains(textInput) }
@@ -198,7 +207,8 @@ private fun MainContent(
             items(filteredApps) {
                 ApplicationInfoItem(
                     appInfo = it,
-                    textInput
+                    textInput = textInput,
+                    onArchiveClick = { onItemClick(it) }
                 )
             }
         }
@@ -206,7 +216,11 @@ private fun MainContent(
 }
 
 @Composable
-private fun ApplicationInfoItem(appInfo: ApplicationInfo, textInput: String) {
+private fun ApplicationInfoItem(
+    appInfo: ApplicationInfo,
+    textInput: String,
+    onArchiveClick: () -> Unit
+) {
     val context = LocalContext.current
     val packageManager = context.packageManager
     val appLabel = packageManager.getApplicationLabel(appInfo).toString()
@@ -246,6 +260,12 @@ private fun ApplicationInfoItem(appInfo: ApplicationInfo, textInput: String) {
         Column() {
             Text(appLabel, fontSize = MaterialTheme.typography.h6.fontSize)
             Text(annotatedText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        // TODO fix alignment
+        IconButton(
+            onClick = onArchiveClick,
+        ) {
+            Icon(Icons.Default.Archive, null)
         }
     }
 }
