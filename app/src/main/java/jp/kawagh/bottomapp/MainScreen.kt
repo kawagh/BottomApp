@@ -55,10 +55,10 @@ fun MainScreen() {
         mutableStateOf(false)
     }
 
-    var selectedItemIndex by remember {
-        mutableStateOf(0)
-    }
     val items = listOf(BottomItem.Home, BottomItem.Recent, BottomItem.Archive)
+    var selectedItemIndex by remember {
+        mutableStateOf(items.indexOf(BottomItem.Archive))
+    }
 
     val context = LocalContext.current
     val dataStore = ArchiveDataStore(context)
