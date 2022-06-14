@@ -8,10 +8,13 @@ import android.icu.util.Calendar
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.GridCells
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -43,6 +46,9 @@ import kotlinx.coroutines.launch
 @ExperimentalPermissionsApi
 @Composable
 fun MainScreen() {
+    var isGridDisplay by remember {
+        mutableStateOf(false)
+    }
     var showTextField by remember {
         mutableStateOf(false)
     }
@@ -156,6 +162,14 @@ fun MainScreen() {
                     }
                 },
                 actions = {
+                    IconToggleButton(
+                        checked = isGridDisplay,
+                        onCheckedChange = { isGridDisplay = !isGridDisplay }) {
+                        Icon(
+                            if (isGridDisplay) Icons.Default.GridOn else Icons.Default.GridOff,
+                            null
+                        )
+                    }
                     IconButton(onClick = { filterOnlyNonSystemApps = !filterOnlyNonSystemApps }) {
                         val tint =
                             animateColorAsState(
@@ -174,6 +188,7 @@ fun MainScreen() {
         content = {
             Column {
                 MainContent(
+                    isGridDisplay = isGridDisplay,
                     showTextField = showTextField,
                     textInput = textInput,
                     appsToDisplay = appsToDisplay,
@@ -209,8 +224,10 @@ sealed class BottomItem(val name: String, val icon: ImageVector) {
     object Archive : BottomItem("Archive", Icons.Default.Archive)
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MainContent(
+    isGridDisplay: Boolean,
     showTextField: Boolean,
     textInput: String,
     appsToDisplay: List<ApplicationInfo>,
@@ -231,16 +248,52 @@ private fun MainContent(
             headerText, fontSize = MaterialTheme.typography.h5.fontSize,
             modifier = Modifier.align(Alignment.End)
         )
-        LazyColumn(horizontalAlignment = Alignment.Start) {
-            items(filteredApps) {
-                ApplicationInfoItem(
-                    appInfo = it,
-                    textInput = textInput,
-                    onItemClick = { onTrailIconClick(it) },
-                    icon = trailIcon,
-                )
+        if (isGridDisplay) {
+            LazyVerticalGrid(GridCells.Fixed(5)) {
+                items(filteredApps) {
+                    ApplicationInfoGridItem(applicationInfo = it)
+                }
+            }
+        } else {
+            LazyColumn(horizontalAlignment = Alignment.Start) {
+                items(filteredApps) {
+                    ApplicationInfoItem(
+                        appInfo = it,
+                        textInput = textInput,
+                        onItemClick = { onTrailIconClick(it) },
+                        icon = trailIcon,
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+fun ApplicationInfoGridItem(applicationInfo: ApplicationInfo) {
+    val packageManager = LocalContext.current.packageManager
+    val context = LocalContext.current
+    val appLabel = packageManager.getApplicationLabel(applicationInfo).toString()
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Image(
+            bitmap = applicationInfo.loadIcon(packageManager).toBitmap(150, 150).asImageBitmap(),
+            contentDescription = null,
+            modifier = Modifier.clickable {
+                val intent = packageManager.getLaunchIntentForPackage(applicationInfo.packageName)
+                intent?.also {
+                    context.startActivity(intent)
+                } ?: run {
+                    Toast
+                        .makeText(
+                            context,
+                            "launch failed",
+                            Toast.LENGTH_SHORT
+                        )
+                        .show()
+                }
+            }
+        )
+        Text(appLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
